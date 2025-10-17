@@ -136,7 +136,7 @@
 */
 
 /* ---------- CONFIG ---------- */
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycby4AisGu2SKRgI3CNyDG6-wCoEU9LWwK-5OybzfOikFASkugPbQel4DbjbSi8MiObxEHQ/exec"; // <-- REPLACE this with your Apps Script web app URL
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwwRGsDT2XoDiHD-QksaKAZB8mHpvlPIvicE-IDGMubanfTEBtRnlLr3-K0IkWteCiLKw/exec"; // <-- REPLACE this with your Apps Script web app URL
 const APP_PASSWORD = "PC2";                 // <-- Change this before using
 
 /* ---------- Helpers ---------- */
@@ -215,19 +215,18 @@ async function fetchRows(){
 
 async function postEntry(entry) {
   try {
-    const response = await fetch(WEB_APP_URL, {
+    await fetch(WEB_APP_URL, {
       method: "POST",
-      mode: "no-cors", // ✅ prevents preflight, bypasses CORS block
+      mode: "no-cors", // <--- MUST be here
       headers: {
         "Content-Type": "application/json"
       },
       body: JSON.stringify(entry)
     });
-    console.log("Data sent to Google Apps Script");
-    alert("OUT saved");
+    alert("OUT saved (sent to cloud)");
   } catch (error) {
-    console.error("Failed to post:", error);
-    alert("Failed to save entry.");
+    console.error(error);
+    alert("Failed to save entry");
   }
 }
 
@@ -236,13 +235,28 @@ outClear.onclick = ()=> outPad.clear();
 inClear.onclick = ()=> inPad.clear();
 guardClear.onclick = ()=> guardPad.clear();
 
-outSave.onclick = async () => {
-  if(!outDate.value || !outTime.value) return alert('Enter date & time for OUT.');
-  outSave.disabled = true;
+  const rawDate = outDate.value;
+  const rawTime = outTime.value;
+
+  // 🧠 Format to readable strings
+  const dateObj = new Date(rawDate);
+  const timeObj = new Date(`1970-01-01T${rawTime}:00`);
+
+  const formattedDate = dateObj.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "2-digit",
+  });
+  const formattedTime = timeObj.toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+
   const entry = {
     type: 'OUT',
-    date: outDate.value,
-    time: outTime.value,
+    date: formattedDate,   // ✅ e.g. "October 17, 2025"
+    time: formattedTime,   // ✅ e.g. "08:00 AM"
     purpose: outPurpose.value || '',
     recipient: outRecipient.value || '',
     signature: outPad.isEmpty() ? '' : outPad.toDataURL(),
@@ -250,6 +264,7 @@ outSave.onclick = async () => {
     linkedOutID: '',
     entryID: Date.now().toString() + '_' + Math.floor(Math.random()*10000)
   };
+
   try{
     await postEntry(entry);
     await reloadAndRender();
@@ -263,10 +278,28 @@ inSave.onclick = async () => {
   if(!inDate.value || !inTime.value) return alert('Enter date & time for IN.');
   if(!linkOutSelect.value) return alert('Please select which Toolbox OUT this corresponds to.');
   inSave.disabled = true;
+  const rawDate = inDate.value;
+  const rawTime = inTime.value;
+
+  // 🧠 Format to readable strings
+  const dateObj = new Date(rawDate);
+  const timeObj = new Date(`1970-01-01T${rawTime}:00`);
+
+  const formattedDate = dateObj.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "2-digit",
+  });
+  const formattedTime = timeObj.toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+
   const entry = {
     type: 'IN',
-    date: inDate.value,
-    time: inTime.value,
+    date: formattedDate,   // ✅ e.g. "October 17, 2025"
+    time: formattedTime,   // ✅ e.g. "04:00 PM",
     purpose: inPurpose.value || 'Return the Toolbox',
     recipient: inRecipient.value || '',
     signature: inPad.isEmpty() ? '' : inPad.toDataURL(),
@@ -385,6 +418,3 @@ showPasswordModal();
 </script>
 </body>
 </html>
-
-
-
