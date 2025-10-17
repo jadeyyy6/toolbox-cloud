@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Toolbox Out / In — Cloud Synced</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <!-- libs -->
+  <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <style>
+    :root{--card-bg:#fff;--accent:#2d8cff}
+    body{font-family:Arial,Helvetica,sans-serif;background:#f6f6f6;margin:18px;color:#000}
+    h1{margin:6px 0 18px}
+    .wrap{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start}
+    .card{background:var(--card-bg);padding:12px;border-radius:8px;box-shadow:0 1px 6px rgba(0,0,0,0.06);width:420px}
+    label{display:block;margin-top:8px;font-size:13px}
+    input[type="text"],input[type="date"],input[type="time"],select,textarea{width:100%;padding:6px;margin-top:6px;box-sizing:border-box;color:#000}
+    .sig-area{border:1px dashed #bbb;height:120px;margin-top:6px;display:flex;align-items:center;justify-content:center;background:#fff}
+    .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}
+    button{padding:8px 12px;border-radius:6px;border:1px solid #bbb;background:#fff;cursor:pointer}
+    .primary{background:var(--accent);color:#fff;border-color:#1f78d1}
+    .danger{background:#ff6b6b;color:#fff;border-color:#e04646}
+    .small{font-size:12px;padding:6px 8px}
+    table{width:100%;border-collapse:collapse;margin-top:12px;background:#fff}
+    th,td{border:1px solid #999;padding:6px;font-size:12px;text-align:center;vertical-align:middle}
+    th{font-weight:700}
+    .sig-thumb{width:100%;height:50px;object-fit:contain;background:#fff;display:block;margin:0 auto}
+    .muted{color:#444;font-size:12px}
+    /* Password modal */
+    .modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);z-index:9999}
+    .modal-card{background:#fff;padding:20px;border-radius:8px;width:360px;box-shadow:0 6px 30px rgba(0,0,0,0.3)}
+    .muted-center{font-size:13px;color:#666;text-align:center;margin-top:8px}
+    @media (max-width:960px){.card{width:100%}}
+  </style>
+</head>
+<body>
+  <h1>Toolbox Out / In — Cloud Synced</h1>
+
+  <div class="wrap">
+    <!-- OUT card -->
+    <div class="card" id="outCard">
+      <strong>Toolbox OUT</strong>
+      <label>Date</label><input id="outDate" type="date" />
+      <label>Time</label><input id="outTime" type="time" />
+      <label>Purpose</label><input id="outPurpose" type="text" placeholder="e.g. Cutting, Installation" />
+      <label>Recipient</label><input id="outRecipient" type="text" placeholder="Recipient name" />
+      <label>Recipient Signature</label>
+      <div class="sig-area"><canvas id="outSigCanvas" width="400" height="120"></canvas></div>
+      <div class="row">
+        <button id="outClear" class="small">Clear</button>
+        <button id="outSave" class="primary">Save OUT Entry</button>
+      </div>
+    </div>
+
+    <!-- IN card -->
+    <div class="card" id="inCard">
+      <strong>Toolbox IN</strong>
+      <label>Date</label><input id="inDate" type="date" />
+      <label>Time</label><input id="inTime" type="time" />
+      <label>Purpose</label><input id="inPurpose" type="text" value="Return the Toolbox" readonly style="background:#f3f3f3;color:#000" />
+      <label>Recipient</label><input id="inRecipient" type="text" placeholder="Recipient name" />
+      <label>Link corresponding Toolbox OUT</label>
+      <select id="linkOutSelect"><option value="">-- Select OUT entry --</option></select>
+
+      <label>Recipient Signature</label>
+      <div class="sig-area"><canvas id="inSigCanvas" width="400" height="120"></canvas></div>
+
+      <label>Guard on duty Signature</label>
+      <div class="sig-area"><canvas id="guardSigCanvas" width="400" height="120"></canvas></div>
+
+      <div class="row">
+        <button id="inClear" class="small">Clear Recip Sig</button>
+        <button id="guardClear" class="small">Clear Guard Sig</button>
+        <button id="inSave" class="primary">Save IN Entry</button>
+      </div>
+    </div>
+
+    <!-- Controls & Table -->
+    <div class="card" style="width:100%;max-width:1100px;">
+      <strong>Controls</strong>
+      <div class="row" style="margin-top:8px">
+        <button id="downloadAll" class="primary">Download All (PDF)</button>
+        <button id="resetAll" class="danger">Reset All (CLEAR SHEET)</button>
+        <div style="flex:1" class="muted">Data stored in Google Sheet — opens to everyone who has the web-app URL.</div>
+      </div>
+
+      <div style="margin-top:12px;overflow:auto;">
+        <table id="pairedTable">
+          <thead>
+            <tr class="pair-header">
+              <th colspan="5" style="background:#f5b3b3">TOOLBOX OUT</th>
+              <th colspan="6" style="background:#bfe3bf">TOOLBOX IN</th>
+            </tr>
+            <tr>
+              <th style="background:#f5b3b3">Date</th>
+              <th style="background:#f5b3b3">Time</th>
+              <th style="background:#f5b3b3">Purpose</th>
+              <th style="background:#f5b3b3">Recipient</th>
+              <th style="background:#f5b3b3">Signature</th>
+
+              <th style="background:#bfe3bf">Date</th>
+              <th style="background:#bfe3bf">Time</th>
+              <th style="background:#bfe3bf">Purpose</th>
+              <th style="background:#bfe3bf">Recipient</th>
+              <th style="background:#bfe3bf">Signature</th>
+              <th style="background:#bfe3bf">Guard</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Password modal -->
+  <div id="passwordModal" class="modal" style="display:none">
+    <div class="modal-card">
+      <h3>Enter Password to access the Toolbox App</h3>
+      <input id="passwordInput" type="password" placeholder="Password" style="width:100%;padding:8px;margin-top:12px" />
+      <div class="row" style="justify-content:flex-end;margin-top:12px">
+        <button id="pwCancel" class="small">Exit</button>
+        <button id="pwSubmit" class="primary small">Unlock</button>
+      </div>
+      <div class="muted-center">This is a simple client-side gate. Change the password in the HTML before publishing.</div>
+    </div>
+  </div>
+
+<script>
+/*
+  INSTRUCTIONS:
+  1) Replace WEB_APP_URL with your Google Apps Script web app URL (the /exec URL).
+  2) Set APP_PASSWORD to whatever you want.
+  3) Deploy the Apps Script to accept GET (returns rows) and POST (append JSON row).
+*/
+
+/* ---------- CONFIG ---------- */
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwwRGsDT2XoDiHD-QksaKAZB8mHpvlPIvicE-IDGMubanfTEBtRnlLr3-K0IkWteCiLKw/exec"; // <-- REPLACE this with your Apps Script web app URL
+const APP_PASSWORD = "PC2";                 // <-- Change this before using
+
+/* ---------- Helpers ---------- */
+const q = sel => document.querySelector(sel);
+const fmtDate = d => d ? d.split('-').reverse().join('/') : '';
+
+/* ---------- Signature pads ---------- */
+const outPad = new SignaturePad(q('#outSigCanvas'));
+const inPad = new SignaturePad(q('#inSigCanvas'));
+const guardPad = new SignaturePad(q('#guardSigCanvas'));
+
+/* ---------- Elements ---------- */
+const outDate = q('#outDate'), outTime = q('#outTime'), outPurpose = q('#outPurpose'), outRecipient = q('#outRecipient');
+const inDate = q('#inDate'), inTime = q('#inTime'), inPurpose = q('#inPurpose'), inRecipient = q('#inRecipient');
+const linkOutSelect = q('#linkOutSelect');
+const pairedBody = q('#pairedTable tbody');
+
+const outClear = q('#outClear'), outSave = q('#outSave');
+const inClear = q('#inClear'), guardClear = q('#guardClear'), inSave = q('#inSave');
+const downloadAllBtn = q('#downloadAll'), resetAllBtn = q('#resetAll');
+
+/* ---------- Password modal logic (client-side gate) ---------- */
+const pwModal = q('#passwordModal'), pwInput = q('#passwordInput'), pwSubmit = q('#pwSubmit'), pwCancel = q('#pwCancel');
+
+function showPasswordModal(){
+  // if already unlocked in this session, skip modal
+  if(sessionStorage.getItem('toolbox_unlocked') === '1') return initApp();
+  pwModal.style.display = 'flex';
+  pwInput.value = '';
+  pwInput.focus();
+}
+pwSubmit.onclick = () => {
+  if(pwInput.value === APP_PASSWORD){
+    sessionStorage.setItem('toolbox_unlocked','1');
+    pwModal.style.display = 'none';
+    initApp();
+  } else {
+    alert('Incorrect password');
+    pwInput.value = '';
+    pwInput.focus();
+  }
+};
+pwCancel.onclick = () => {
+  pwModal.style.display = 'none';
+  // optionally close page
+  // window.close();
+};
+
+/* ---------- Network helpers ---------- */
+async function fetchRows(){
+  if(!WEB_APP_URL || WEB_APP_URL.includes('PASTE_YOUR')) {
+    alert('Please set WEB_APP_URL in the HTML to your Apps Script web app URL.');
+    return [];
+  }
+  try {
+    const r = await fetch(WEB_APP_URL, {method:'GET',cache:'no-cache'});
+    if(!r.ok) throw new Error('Network error');
+    const data = await r.json(); // expected array of arrays
+    return data.map(row => ({
+      type: row[0] || '',
+      date: row[1] || '',
+      time: row[2] || '',
+      purpose: row[3] || '',
+      recipient: row[4] || '',
+      signature: row[5] || '',
+      guard: row[6] || '',
+      linkedOutID: row[7] || '',
+      entryID: row[8] || ''
+    }));
+  } catch(err){
+    console.error(err);
+    alert('Failed to fetch data from the web app. Check WEB_APP_URL and that the web app is deployed and accessible.');
+    return [];
+  }
+}
+
+async function postEntry(entry){
+  try{
+    const r = await fetch(WEB_APP_URL, {
+      method:'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(entry)
+    });
+    if(!r.ok) throw new Error('POST failed');
+    return await r.json();
+  } catch(err){
+    console.error(err);
+    alert('Failed to save entry. See console for details.');
+    throw err;
+  }
+}
+
+/* ---------- UI actions ---------- */
+outClear.onclick = ()=> outPad.clear();
+inClear.onclick = ()=> inPad.clear();
+guardClear.onclick = ()=> guardPad.clear();
+
+outSave.onclick = async () => {
+  if(!outDate.value || !outTime.value) return alert('Enter date & time for OUT.');
+  outSave.disabled = true;
+  const entry = {
+    type: 'OUT',
+    date: outDate.value,
+    time: outTime.value,
+    purpose: outPurpose.value || '',
+    recipient: outRecipient.value || '',
+    signature: outPad.isEmpty() ? '' : outPad.toDataURL(),
+    guard: '',
+    linkedOutID: '',
+    entryID: Date.now().toString() + '_' + Math.floor(Math.random()*10000)
+  };
+  try{
+    await postEntry(entry);
+    await reloadAndRender();
+    outPad.clear();
+    outDate.value = outTime.value = outPurpose.value = outRecipient.value = '';
+    alert('OUT saved');
+  } finally { outSave.disabled = false; }
+};
+
+inSave.onclick = async () => {
+  if(!inDate.value || !inTime.value) return alert('Enter date & time for IN.');
+  if(!linkOutSelect.value) return alert('Please select which Toolbox OUT this corresponds to.');
+  inSave.disabled = true;
+  const entry = {
+    type: 'IN',
+    date: inDate.value,
+    time: inTime.value,
+    purpose: inPurpose.value || 'Return the Toolbox',
+    recipient: inRecipient.value || '',
+    signature: inPad.isEmpty() ? '' : inPad.toDataURL(),
+    guard: guardPad.isEmpty() ? '' : guardPad.toDataURL(),
+    linkedOutID: linkOutSelect.value,
+    entryID: Date.now().toString() + '_' + Math.floor(Math.random()*10000)
+  };
+  try{
+    await postEntry(entry);
+    await reloadAndRender();
+    inPad.clear(); guardPad.clear();
+    inDate.value = inTime.value = inRecipient.value = '';
+    alert('IN saved');
+  } finally { inSave.disabled = false; }
+};
+
+/* ---------- Clear sheet (dangerous) ---------- */
+resetAllBtn.onclick = async () => {
+  if(!confirm('This will CLEAR ALL rows from the Google Sheet (except header). Are you sure?')) return;
+  // There is no standard client API to delete rows via the web app unless the Apps Script supports it.
+  // We'll attempt to call WEB_APP_URL + '?action=clear' which you can implement server-side if you want.
+  try {
+    const r = await fetch(WEB_APP_URL + '?action=clear', {method:'POST'});
+    if(!r.ok) throw new Error('Clear failed');
+    alert('Requested sheet clear. If your Apps Script supports clear action it will be cleared.');
+    await reloadAndRender();
+  } catch(err){
+    alert('Clear request failed or not implemented server-side. If you need this, add support for ?action=clear in your Apps Script.');
+    console.error(err);
+  }
+};
+
+/* ---------- Rendering the paired table & link dropdown ---------- */
+let cachedRows = [];
+
+function renderPaired(rows){
+  // rows: array of entries
+  pairedBody.innerHTML = '';
+  // find all OUT entries in insertion order; we'll try to match first IN with linkedOutID==out.entryID
+  const outs = rows.filter(r=>r.type === 'OUT' || r.type === 'out');
+  const ins = rows.filter(r=>r.type === 'IN' || r.type === 'in');
+
+  // For quick lookup of IN by linkedOutID (first match)
+  const insByOut = {};
+  for(const i of ins){
+    if(i.linkedOutID && !insByOut[i.linkedOutID]) insByOut[i.linkedOutID] = i;
+  }
+
+  // Build rows for each out
+  outs.forEach(o => {
+    const matched = insByOut[o.entryID];
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${fmtDate(o.date)}</td>
+      <td>${o.time||''}</td>
+      <td>${o.purpose||''}</td>
+      <td>${o.recipient||''}</td>
+      <td>${o.signature ? '<img class="sig-thumb" src="'+o.signature+'">' : '(no sig)'}</td>
+
+      <td>${matched?fmtDate(matched.date):''}</td>
+      <td>${matched?matched.time:''}</td>
+      <td>${matched?matched.purpose:''}</td>
+      <td>${matched?matched.recipient:''}</td>
+      <td>${matched?(matched.signature?'<img class="sig-thumb" src="'+matched.signature+'">':'(no sig)'):''}</td>
+      <td>${matched?(matched.guard?'<img class="sig-thumb" src="'+matched.guard+'">':'(no sig)'):''}</td>
+    `;
+    pairedBody.appendChild(tr);
+  });
+
+  // Update linkOutSelect with OUTs that are not yet linked (so user won't accidentally link an already returned toolbox)
+  const usedOutIds = new Set(ins.map(i=>i.linkedOutID).filter(Boolean));
+  linkOutSelect.innerHTML = '<option value="">-- Select OUT entry --</option>';
+  outs.filter(o=>!usedOutIds.has(o.entryID)).forEach(o=>{
+    const opt = document.createElement('option');
+    opt.value = o.entryID;
+    opt.textContent = `${fmtDate(o.date)} ${o.time||''} - ${o.recipient||''} (${o.purpose||''})`;
+    linkOutSelect.appendChild(opt);
+  });
+}
+
+/* ---------- Reload from server ---------- */
+async function reloadAndRender(){
+  const rows = await fetchRows();
+  cachedRows = rows;
+  renderPaired(rows);
+}
+
+/* ---------- PDF download ---------- */
+downloadAllBtn.onclick = async () => {
+  // clone the table area to avoid modal overlay etc.
+  const tableArea = q('#pairedTable').parentElement.cloneNode(true);
+  tableArea.style.padding = '18px';
+  document.body.appendChild(tableArea);
+  try{
+    const canvas = await html2canvas(tableArea, {scale:2});
+    const pdf = new jspdf.jsPDF({orientation:'landscape'});
+    const img = canvas.toDataURL('image/png');
+    const w = pdf.internal.pageSize.getWidth();
+    const h = canvas.height * w / canvas.width;
+    pdf.addImage(img, 'PNG', 0, 0, w, h);
+    pdf.save('LAG_TOOLBOX_all.pdf');
+  } finally {
+    tableArea.remove();
+  }
+};
+
+/* ---------- App init ---------- */
+async function initApp(){
+  // enable UI (if disabled) and load data
+  await reloadAndRender();
+}
+
+/* ---------- Start by showing password modal ---------- */
+showPasswordModal();
+
+</script>
+</body>
+</html>
