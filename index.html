@@ -4,33 +4,37 @@
   <meta charset="utf-8" />
   <title>Toolbox Out / In — Cloud Synced</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-
   <!-- Libraries -->
   <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
   <style>
-    :root{--card-bg:#fff;--accent:#2d8cff}
-    body{font-family:Arial,Helvetica,sans-serif;background:#f6f6f6;margin:18px;color:#000}
-    h1{margin:6px 0 18px}
-    .wrap{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start}
-    .card{background:var(--card-bg);padding:12px;border-radius:8px;box-shadow:0 1px 6px rgba(0,0,0,0.06);width:420px}
-    label{display:block;margin-top:8px;font-size:13px}
-    input,select,textarea{width:100%;padding:6px;margin-top:6px;box-sizing:border-box;color:#000}
-    .sig-area{border:1px dashed #bbb;height:120px;margin-top:6px;display:flex;align-items:center;justify-content:center;background:#fff}
-    .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}
-    button{padding:8px 12px;border-radius:6px;border:1px solid #bbb;background:#fff;cursor:pointer}
-    .primary{background:var(--accent);color:#fff;border-color:#1f78d1}
-    .danger{background:#ff6b6b;color:#fff;border-color:#e04646}
-    .small{font-size:12px;padding:6px 8px}
-    table{width:100%;border-collapse:collapse;margin-top:12px;background:#fff}
-    th,td{border:1px solid #999;padding:6px;font-size:12px;text-align:center;vertical-align:middle}
-    th{font-weight:700}
-    .sig-thumb{width:100%;height:50px;object-fit:contain;background:#fff;display:block;margin:0 auto}
-    .modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);z-index:9999}
-    .modal-card{background:#fff;padding:20px;border-radius:8px;width:360px;box-shadow:0 6px 30px rgba(0,0,0,0.3)}
-    @media (max-width:960px){.card{width:100%}}
+    :root { --card-bg:#fff; --accent:#2d8cff; }
+    body { font-family:Arial,Helvetica,sans-serif; background:#f6f6f6; margin:18px; color:#000; }
+    h1 { margin:6px 0 18px; }
+    .wrap { display:flex; gap:18px; flex-wrap:wrap; align-items:flex-start; }
+    .card { background:var(--card-bg); padding:12px; border-radius:8px; box-shadow:0 1px 6px rgba(0,0,0,0.06); width:420px; }
+    label { display:block; margin-top:8px; font-size:13px; }
+    input[type="text"], input[type="date"], input[type="time"], select, textarea {
+      width:100%; padding:6px; margin-top:6px; box-sizing:border-box; color:#000;
+    }
+    .sig-area { border:1px dashed #bbb; height:120px; margin-top:6px; display:flex; align-items:center; justify-content:center; background:#fff; }
+    .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:10px; }
+    button { padding:8px 12px; border-radius:6px; border:1px solid #bbb; background:#fff; cursor:pointer; }
+    .primary { background:var(--accent); color:#fff; border-color:#1f78d1; }
+    .danger { background:#ff6b6b; color:#fff; border-color:#e04646; }
+    .small { font-size:12px; padding:6px 8px; }
+    table { width:100%; border-collapse:collapse; margin-top:12px; background:#fff; }
+    th, td { border:1px solid #999; padding:6px; font-size:12px; text-align:center; vertical-align:middle; }
+    th { font-weight:700; }
+    .sig-thumb { width:100%; height:50px; object-fit:contain; background:#fff; display:block; margin:0 auto; }
+    .muted { color:#444; font-size:12px; }
+    /* Password modal */
+    .modal { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.45); z-index:9999; }
+    .modal-card { background:#fff; padding:20px; border-radius:8px; width:360px; box-shadow:0 6px 30px rgba(0,0,0,0.3); }
+    .muted-center { font-size:13px; color:#666; text-align:center; margin-top:8px; }
+    @media (max-width:960px){.card{width:100%;}}
   </style>
 </head>
 <body>
@@ -38,7 +42,7 @@
 
   <div class="wrap">
     <!-- OUT card -->
-    <div class="card">
+    <div class="card" id="outCard">
       <strong>Toolbox OUT</strong>
       <label>Date</label><input id="outDate" type="date" />
       <label>Time</label><input id="outTime" type="time" />
@@ -53,7 +57,7 @@
     </div>
 
     <!-- IN card -->
-    <div class="card">
+    <div class="card" id="inCard">
       <strong>Toolbox IN</strong>
       <label>Date</label><input id="inDate" type="date" />
       <label>Time</label><input id="inTime" type="time" />
@@ -61,10 +65,13 @@
       <label>Recipient</label><input id="inRecipient" type="text" placeholder="Recipient name" />
       <label>Link corresponding Toolbox OUT</label>
       <select id="linkOutSelect"><option value="">-- Select OUT entry --</option></select>
+
       <label>Recipient Signature</label>
       <div class="sig-area"><canvas id="inSigCanvas" width="400" height="120"></canvas></div>
+
       <label>Guard on duty Signature</label>
       <div class="sig-area"><canvas id="guardSigCanvas" width="400" height="120"></canvas></div>
+
       <div class="row">
         <button id="inClear" class="small">Clear Recip Sig</button>
         <button id="guardClear" class="small">Clear Guard Sig</button>
@@ -72,142 +79,195 @@
       </div>
     </div>
 
-    <!-- Table -->
+    <!-- Controls & Table -->
     <div class="card" style="width:100%;max-width:1100px;">
       <strong>Controls</strong>
-      <div class="row">
+      <div class="row" style="margin-top:8px">
         <button id="downloadAll" class="primary">Download All (PDF)</button>
-        <button id="resetAll" class="danger">Reset All (CLEAR SHEET)</button>
+        <button id="resetAll" class="danger">Reset All (Clear Display Only)</button>
+        <div style="flex:1" class="muted">Data stored in Google Sheet — reload to fetch again from cloud.</div>
       </div>
-      <table id="pairedTable">
-        <thead>
-          <tr><th colspan="5" style="background:#f5b3b3">OUT</th><th colspan="6" style="background:#bfe3bf">IN</th></tr>
-          <tr>
-            <th>Date</th><th>Time</th><th>Purpose</th><th>Recipient</th><th>Signature</th>
-            <th>Date</th><th>Time</th><th>Purpose</th><th>Recipient</th><th>Signature</th><th>Guard</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
+
+      <div style="margin-top:12px;overflow:auto;">
+        <table id="pairedTable">
+          <thead>
+            <tr class="pair-header">
+              <th colspan="5" style="background:#f5b3b3">TOOLBOX OUT</th>
+              <th colspan="6" style="background:#bfe3bf">TOOLBOX IN</th>
+            </tr>
+            <tr>
+              <th style="background:#f5b3b3">Date</th>
+              <th style="background:#f5b3b3">Time</th>
+              <th style="background:#f5b3b3">Purpose</th>
+              <th style="background:#f5b3b3">Recipient</th>
+              <th style="background:#f5b3b3">Signature</th>
+
+              <th style="background:#bfe3bf">Date</th>
+              <th style="background:#bfe3bf">Time</th>
+              <th style="background:#bfe3bf">Purpose</th>
+              <th style="background:#bfe3bf">Recipient</th>
+              <th style="background:#bfe3bf">Signature</th>
+              <th style="background:#bfe3bf">Guard</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
     </div>
   </div>
 
   <!-- Password modal -->
   <div id="passwordModal" class="modal" style="display:none">
     <div class="modal-card">
-      <h3>Enter Password</h3>
+      <h3>Enter Password to access the Toolbox App</h3>
       <input id="passwordInput" type="password" placeholder="Password" style="width:100%;padding:8px;margin-top:12px" />
       <div class="row" style="justify-content:flex-end;margin-top:12px">
         <button id="pwCancel" class="small">Exit</button>
         <button id="pwSubmit" class="primary small">Unlock</button>
       </div>
+      <div class="muted-center">Change the password in HTML before publishing.</div>
     </div>
   </div>
 
 <script>
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwwRGsDT2XoDiHD-QksaKAZB8mHpvlPIvicE-IDGMubanfTEBtRnlLr3-K0IkWteCiLKw/exec";
+const APP_PASSWORD = "PC2";
+const q = sel => document.querySelector(sel);
+
+let outPad, inPad, guardPad;
 window.addEventListener('load', () => {
-  const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwwRGsDT2XoDiHD-QksaKAZB8mHpvlPIvicE-IDGMubanfTEBtRnlLr3-K0IkWteCiLKw/exec";
-  const APP_PASSWORD = "PC2";
-  const q = s => document.querySelector(s);
-
-  // Initialize signature pads
-  const outPad = new SignaturePad(q('#outSigCanvas'));
-  const inPad = new SignaturePad(q('#inSigCanvas'));
-  const guardPad = new SignaturePad(q('#guardSigCanvas'));
-
-  // Elements
-  const outDate = q('#outDate'), outTime = q('#outTime'), outPurpose = q('#outPurpose'), outRecipient = q('#outRecipient');
-  const inDate = q('#inDate'), inTime = q('#inTime'), inPurpose = q('#inPurpose'), inRecipient = q('#inRecipient');
-  const linkOutSelect = q('#linkOutSelect'), pairedBody = q('#pairedTable tbody');
-  const outClear = q('#outClear'), outSave = q('#outSave'), inClear = q('#inClear'), guardClear = q('#guardClear'), inSave = q('#inSave');
-  const resetAllBtn = q('#resetAll'), downloadAllBtn = q('#downloadAll');
-  const pwModal = q('#passwordModal'), pwInput = q('#passwordInput'), pwSubmit = q('#pwSubmit'), pwCancel = q('#pwCancel');
-
-  // Password modal
-  function showPasswordModal() {
-    if (sessionStorage.getItem('unlocked') === '1') return initApp();
-    pwModal.style.display = 'flex';
-  }
-  pwSubmit.onclick = () => {
-    if (pwInput.value === APP_PASSWORD) {
-      sessionStorage.setItem('unlocked','1');
-      pwModal.style.display = 'none';
-      initApp();
-    } else alert('Incorrect password');
-  };
-  pwCancel.onclick = () => pwModal.style.display = 'none';
-
-  // Clear buttons
-  outClear.onclick = () => outPad.clear();
-  inClear.onclick = () => inPad.clear();
-  guardClear.onclick = () => guardPad.clear();
-
-  // Network helpers
-  async function fetchRows() {
-    try {
-      const r = await fetch(WEB_APP_URL);
-      if(!r.ok) throw new Error('Network');
-      const data = await r.json();
-      return data.map(row=>({type:row[0],date:row[1],time:row[2],purpose:row[3],recipient:row[4],signature:row[5],guard:row[6],linkedOutID:row[7],entryID:row[8]}));
-    } catch(e){console.error(e);return [];}
-  }
-  async function postEntry(entry){
-    try{await fetch(WEB_APP_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"application/json"},body:JSON.stringify(entry)});}
-    catch(e){alert('Save failed');console.error(e);}
-  }
-
-  // Save OUT
-  outSave.onclick = async () => {
-    if(!outDate.value||!outTime.value) return alert('Enter date & time');
-    const dateObj = new Date(outDate.value);
-    const timeObj = new Date(`1970-01-01T${outTime.value}:00`);
-    const formattedDate = dateObj.toLocaleDateString("en-US",{year:"numeric",month:"long",day:"2-digit"});
-    const formattedTime = timeObj.toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit",hour12:true});
-    const entry = {type:'OUT',date:formattedDate,time:formattedTime,purpose:outPurpose.value,recipient:outRecipient.value,signature:outPad.isEmpty()?'':outPad.toDataURL(),guard:'',linkedOutID:'',entryID:Date.now()+''};
-    await postEntry(entry); await reloadAndRender(); outPad.clear(); alert('OUT saved');
-  };
-
-  // Save IN
-  inSave.onclick = async () => {
-    if(!inDate.value||!inTime.value) return alert('Enter date & time');
-    if(!linkOutSelect.value) return alert('Select corresponding OUT');
-    const dateObj = new Date(inDate.value);
-    const timeObj = new Date(`1970-01-01T${inTime.value}:00`);
-    const formattedDate = dateObj.toLocaleDateString("en-US",{year:"numeric",month:"long",day:"2-digit"});
-    const formattedTime = timeObj.toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit",hour12:true});
-    const entry = {type:'IN',date:formattedDate,time:formattedTime,purpose:inPurpose.value,recipient:inRecipient.value,signature:inPad.isEmpty()?'':inPad.toDataURL(),guard:guardPad.isEmpty()?'':guardPad.toDataURL(),linkedOutID:linkOutSelect.value,entryID:Date.now()+''};
-    await postEntry(entry); await reloadAndRender(); inPad.clear(); guardPad.clear(); alert('IN saved');
-  };
-
-  // Reset all
-  resetAllBtn.onclick = async ()=>{
-    if(!confirm('Clear all data?')) return;
-    await fetch(WEB_APP_URL+'?action=clear',{method:'POST'});
-    alert('Sheet cleared');
-    await reloadAndRender();
-  };
-
-  // Render
-  function renderPaired(rows){
-    pairedBody.innerHTML='';
-    const outs=rows.filter(r=>r.type==='OUT'), ins=rows.filter(r=>r.type==='IN');
-    const insByOut={}; ins.forEach(i=>insByOut[i.linkedOutID]=i);
-    outs.forEach(o=>{
-      const m=insByOut[o.entryID];
-      const tr=document.createElement('tr');
-      tr.innerHTML=`<td>${o.date}</td><td>${o.time}</td><td>${o.purpose}</td><td>${o.recipient}</td><td>${o.signature?'<img class="sig-thumb" src="'+o.signature+'">':''}</td>
-      <td>${m?m.date:''}</td><td>${m?m.time:''}</td><td>${m?m.purpose:''}</td><td>${m?m.recipient:''}</td><td>${m?(m.signature?'<img class="sig-thumb" src="'+m.signature+'">':''):''}</td><td>${m?(m.guard?'<img class="sig-thumb" src="'+m.guard+'">':''):''}</td>`;
-      pairedBody.appendChild(tr);
-    });
-    linkOutSelect.innerHTML='<option value="">-- Select OUT --</option>';
-    outs.forEach(o=>{const opt=document.createElement('option');opt.value=o.entryID;opt.textContent=`${o.date} ${o.time} - ${o.recipient}`;linkOutSelect.appendChild(opt);});
-  }
-
-  async function reloadAndRender(){const rows=await fetchRows();renderPaired(rows);}
-
-  async function initApp(){await reloadAndRender();}
-  showPasswordModal();
+  outPad = new SignaturePad(q('#outSigCanvas'));
+  inPad = new SignaturePad(q('#inSigCanvas'));
+  guardPad = new SignaturePad(q('#guardSigCanvas'));
 });
+
+const fmtDate = (d) => {
+  if (!d) return '';
+  const parsed = new Date(d);
+  if (isNaN(parsed)) return d;
+  return parsed.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+};
+const fmtTime = (t) => {
+  if (!t) return '';
+  const parsed = new Date('1970-01-01T' + t);
+  if (isNaN(parsed)) return t;
+  return parsed.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+};
+
+const outDate = q('#outDate'), outTime = q('#outTime'), outPurpose = q('#outPurpose'), outRecipient = q('#outRecipient');
+const inDate = q('#inDate'), inTime = q('#inTime'), inPurpose = q('#inPurpose'), inRecipient = q('#inRecipient');
+const linkOutSelect = q('#linkOutSelect'), pairedBody = q('#pairedTable tbody');
+const outClear = q('#outClear'), outSave = q('#outSave');
+const inClear = q('#inClear'), guardClear = q('#guardClear'), inSave = q('#inSave');
+const downloadAllBtn = q('#downloadAll'), resetAllBtn = q('#resetAll');
+const pwModal = q('#passwordModal'), pwInput = q('#passwordInput'), pwSubmit = q('#pwSubmit'), pwCancel = q('#pwCancel');
+
+function showPasswordModal(){
+  if(sessionStorage.getItem('toolbox_unlocked')==='1') return initApp();
+  pwModal.style.display='flex'; pwInput.value=''; pwInput.focus();
+}
+pwSubmit.onclick=()=>{if(pwInput.value===APP_PASSWORD){sessionStorage.setItem('toolbox_unlocked','1');pwModal.style.display='none';initApp();}else{alert('Incorrect password');pwInput.value='';pwInput.focus();}};
+pwCancel.onclick=()=>{pwModal.style.display='none';};
+
+async function fetchRows(){
+  try{
+    const r = await fetch(WEB_APP_URL,{method:'GET',cache:'no-cache'});
+    if(!r.ok) throw new Error('Network error');
+    const data = await r.json();
+    return data.map(row=>({
+      type:row[0]||'',date:row[1]||'',time:row[2]||'',purpose:row[3]||'',recipient:row[4]||'',
+      signature:row[5]||'',guard:row[6]||'',linkedOutID:row[7]||'',entryID:row[8]||''
+    }));
+  }catch(err){console.error(err);alert('Failed to fetch data from cloud.');return[];}
+}
+
+async function postEntry(entry){
+  try{
+    await fetch(WEB_APP_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(entry)});
+  }catch(e){console.error(e);}
+}
+
+outClear.onclick=()=>outPad.clear();
+inClear.onclick=()=>inPad.clear();
+guardClear.onclick=()=>guardPad.clear();
+
+outSave.onclick=async()=>{
+  if(!outDate.value||!outTime.value)return alert('Enter date & time.');
+  outSave.disabled=true;
+  const entry={type:'OUT',date:outDate.value,time:outTime.value,purpose:outPurpose.value,recipient:outRecipient.value,
+  signature:outPad.isEmpty()?'':outPad.toDataURL(),guard:'',linkedOutID:'',entryID:Date.now()+''};
+  await postEntry(entry);await reloadAndRender();
+  outPad.clear();outDate.value=outTime.value=outPurpose.value=outRecipient.value='';
+  alert('OUT saved');outSave.disabled=false;
+};
+
+inSave.onclick=async()=>{
+  if(!inDate.value||!inTime.value)return alert('Enter date & time.');
+  if(!linkOutSelect.value)return alert('Select Toolbox OUT.');
+  inSave.disabled=true;
+  const entry={type:'IN',date:inDate.value,time:inTime.value,purpose:inPurpose.value,
+  recipient:inRecipient.value,signature:inPad.isEmpty()?'':inPad.toDataURL(),
+  guard:guardPad.isEmpty()?'':guardPad.toDataURL(),linkedOutID:linkOutSelect.value,entryID:Date.now()+''};
+  await postEntry(entry);await reloadAndRender();
+  inPad.clear();guardPad.clear();inDate.value=inTime.value=inRecipient.value='';
+  alert('IN saved');inSave.disabled=false;
+};
+
+// ✅ Reset: Clear displayed table only
+resetAllBtn.onclick=()=>{
+  if(!confirm('This will clear the displayed table only (not the Google Sheet). Continue?'))return;
+  pairedBody.innerHTML='';
+  linkOutSelect.innerHTML='<option value="">-- Select OUT entry --</option>';
+  alert('✅ Display cleared. Reload to fetch data again.');
+};
+
+function renderPaired(rows){
+  pairedBody.innerHTML='';
+  const outs=rows.filter(r=>r.type==='OUT'||r.type==='out');
+  const ins=rows.filter(r=>r.type==='IN'||r.type==='in');
+  const insByOut={};ins.forEach(i=>{if(i.linkedOutID&&!insByOut[i.linkedOutID])insByOut[i.linkedOutID]=i;});
+  outs.forEach(o=>{
+    const i=insByOut[o.entryID];
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td>${fmtDate(o.date)}</td><td>${fmtTime(o.time)}</td><td>${o.purpose||''}</td><td>${o.recipient||''}</td>
+      <td>${o.signature?'<img class="sig-thumb" src="'+o.signature+'">':'(no sig)'}</td>
+      <td>${i?fmtDate(i.date):''}</td><td>${i?fmtTime(i.time):''}</td><td>${i?i.purpose:''}</td>
+      <td>${i?i.recipient:''}</td>
+      <td>${i?(i.signature?'<img class="sig-thumb" src="'+i.signature+'">':'(no sig)'):''}</td>
+      <td>${i?(i.guard?'<img class="sig-thumb" src="'+i.guard+'">':'(no sig)'):''}</td>`;
+    pairedBody.appendChild(tr);
+  });
+  const used=new Set(ins.map(i=>i.linkedOutID).filter(Boolean));
+  linkOutSelect.innerHTML='<option value="">-- Select OUT entry --</option>';
+  outs.filter(o=>!used.has(o.entryID)).forEach(o=>{
+    const opt=document.createElement('option');
+    opt.value=o.entryID;
+    opt.textContent=`${fmtDate(o.date)} ${fmtTime(o.time)} - ${o.recipient||''} (${o.purpose||''})`;
+    linkOutSelect.appendChild(opt);
+  });
+}
+
+async function reloadAndRender(){
+  const rows=await fetchRows();
+  renderPaired(rows);
+}
+
+downloadAllBtn.onclick=async()=>{
+  const tableArea=q('#pairedTable').parentElement.cloneNode(true);
+  tableArea.style.padding='18px';document.body.appendChild(tableArea);
+  const canvas=await html2canvas(tableArea,{scale:2});
+  const pdf=new jspdf.jsPDF({orientation:'landscape'});
+  const img=canvas.toDataURL('image/png');
+  const w=pdf.internal.pageSize.getWidth();
+  const h=canvas.height*w/canvas.width;
+  pdf.addImage(img,'PNG',0,0,w,h);
+  pdf.save('LAG_TOOLBOX_all.pdf');
+  tableArea.remove();
+};
+
+async function initApp(){await reloadAndRender();}
+showPasswordModal();
 </script>
 </body>
 </html>
