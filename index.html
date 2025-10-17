@@ -30,7 +30,6 @@
     th { font-weight:700; }
     .sig-thumb { width:100%; height:50px; object-fit:contain; background:#fff; display:block; margin:0 auto; }
     .muted { color:#444; font-size:12px; }
-    /* Password modal */
     .modal { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.45); z-index:9999; }
     .modal-card { background:#fff; padding:20px; border-radius:8px; width:360px; box-shadow:0 6px 30px rgba(0,0,0,0.3); }
     .muted-center { font-size:13px; color:#666; text-align:center; margin-top:8px; }
@@ -101,7 +100,6 @@
               <th style="background:#f5b3b3">Purpose</th>
               <th style="background:#f5b3b3">Recipient</th>
               <th style="background:#f5b3b3">Signature</th>
-
               <th style="background:#bfe3bf">Date</th>
               <th style="background:#bfe3bf">Time</th>
               <th style="background:#bfe3bf">Purpose</th>
@@ -213,12 +211,12 @@ inSave.onclick=async()=>{
   alert('IN saved');inSave.disabled=false;
 };
 
-// ✅ Reset: Clear displayed table only
+// ✅ Reset: Clear displayed table only (no Google Sheet action)
 resetAllBtn.onclick=()=>{
   if(!confirm('This will clear the displayed table only (not the Google Sheet). Continue?'))return;
   pairedBody.innerHTML='';
   linkOutSelect.innerHTML='<option value="">-- Select OUT entry --</option>';
-  alert('✅ Display cleared. Reload to fetch data again.');
+  alert('✅ Display cleared. Reload the page to fetch data again.');
 };
 
 function renderPaired(rows){
